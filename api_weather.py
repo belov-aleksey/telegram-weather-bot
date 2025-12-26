@@ -1,11 +1,7 @@
 """
-Получение данных о погоде по API от Яндекс-Погода.
+Получение данных о погоде по API от https://openweathermap.org/.
 
-На момент написания комментария (апрель 2025) используется v2 версия API
-на тарифе "Погода на вашем сайте".
-
-В ответ на запрос приходит JSON. 
-Подробнее о формате на https://yandex.ru/dev/weather/doc/ru/concepts/forecast-info#resp-format
+На момент написания комментария (декабрь 2025) используется v2.5 версия API.
 """
 
 from loguru import logger
@@ -14,7 +10,7 @@ from aiohttp import ClientSession
 
 from db import get_city_coordinates 
 from exceptions import ServerErrorException
-from settings import API_TOKEN_WEATHER, URL_API_YANDEX
+from settings import API_TOKEN_WEATHER, URL_API
 from models import Coordinates, Temperature, Condition, WindSpeed
 
 logger.add('app.log',  format="{time} {level} {message}", level="INFO")
@@ -49,15 +45,15 @@ RU_PART_NAMES = {
 }
 
 
-async def get_weather_from_server(coordinates: Coordinates) -> dict:
+async def get_weather_from_server(coordinates: Coordinates, is_forecast = False) -> dict:
     """
     Возвращает данные о погоде в словаре weather
 
     """
-    url = f'{URL_API_YANDEX}?lat={coordinates.latitude}&lon={coordinates.longitude}&extra=true&lang=ru_RU'
-    headers = {'X-Yandex-API-Key': API_TOKEN_WEATHER}
+    url_part = "forecast" if is_forecast else "weather"
+    url = f'{URL_API}/{url_part}?lat={coordinates.latitude}&lon={coordinates.longitude}&lang=ru&appid={API_TOKEN_WEATHER}'
     async with ClientSession() as session:
-        async with session.get(url, headers=headers) as response:
+        async with session.get(url) as response:
             if response.status != 200:
                 raise ServerErrorException
             else:
@@ -71,8 +67,8 @@ def get_tempereture(weather: dict) -> Temperature:
     forecast_temperature - прогноз температуры погоды в ближайшее время
 
     """
-    fact_temperature = weather['fact']['temp']
-    forecast_temperature = weather['forecast']['parts'][0]['temp_avg']
+    fact_temperature = round(weather['main']['temp'] - 272.15)
+    forecast_temperature = round(weather['list'][0]['main']['temp'] - 272.15)
     return Temperature(fact_temperature, forecast_temperature)
 
 
@@ -83,8 +79,8 @@ def get_condition(weather: dict) -> Condition:
     forecast_temperature - прогноз температуры погоды в ближайшее время
 
     """
-    fact_condition = RU_CONDITIONS[weather['fact']['condition']]
-    forecast_condition = RU_CONDITIONS[weather['forecast']['parts'][0]['condition']]
+    fact_condition = weather['weather'][0]['description']
+    forecast_condition = weather['list'][0]['weather'][0]['description']
     return Condition(fact_condition, forecast_condition)
 
 
@@ -95,8 +91,8 @@ def get_wind_speed(weather: dict) -> WindSpeed:
     forecast_wind - прогноз скорости ветра в ближайшее время
 
     """   
-    fact_wind_speed = str(weather['fact']['wind_speed'])
-    forecast_wind_speed = str(weather['forecast']['parts'][0]['wind_speed'])
+    fact_wind_speed = str(round(weather['wind']['speed']))
+    forecast_wind_speed = str(round(weather['list'][0]['wind']['speed']))
     return WindSpeed(fact_wind_speed, forecast_wind_speed)
 
 
@@ -111,14 +107,13 @@ def parse_weather(weather: dict, city_name: str) -> str:
     temperature = get_tempereture(weather)
     wind_speed = get_wind_speed(weather)
     condition = get_condition(weather)
-    forecast_part_name = get_forecast_part_name(weather)
-    answer = f'Город: {city_name.capitalize()}. По данным Яндекс-Погода: \n\n' \
+    answer = f'Город: {city_name.capitalize()}. По данным Open-Weather: \n\n' \
         f'Температура воздуха: {temperature.fact_temperature}, {condition.fact_condition}\n' \
-        f'Скорость ветра: {wind_speed.fact_wind_speed} \n\n'\
+        f'Скорость ветра: {wind_speed.fact_wind_speed} м/с \n\n'\
         '----------------\n\n' \
-        f'Прогноз погоды на {forecast_part_name}:\n' \
+        f'Через 3 часа:\n' \
         f'Температура воздуха: {temperature.forecast_temperature}, {condition.forecast_condition}\n' \
-        f'Скорость ветра: {wind_speed.forecast_wind_speed}'
+        f'Скорость ветра: {wind_speed.forecast_wind_speed} м/с'
     return answer
 
 def get_api_error() -> str:
@@ -149,7 +144,9 @@ async def get_weather(city_name: str) -> str:
 
         try:
             logger.info(f'Отправляю запрос на сервер по городу {city_name}')
-            weather = await get_weather_from_server(coordinates)
+            current_weather = await get_weather_from_server(coordinates)
+            forecast_weather = await get_weather_from_server(coordinates, is_forecast = True)
+            weather = current_weather | forecast_weather
             logger.info(f'Данные по городу {city_name} получены')
             answer = parse_weather(weather, city_name)
         except ServerErrorException:

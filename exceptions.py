@@ -1,5 +1,5 @@
 class ServerErrorException(Exception):
-    """Для ошибок при обращении по http к Яндекс-Погода"""
+    """Для ошибок при обращении по http к Open-Weather"""
     pass
 
 class DataBaseException(Exception):
