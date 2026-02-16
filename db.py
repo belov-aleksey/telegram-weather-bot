@@ -3,7 +3,7 @@
 
 """
 
-import sqlite3
+import aiosqlite
 
 from typing import Optional
 from loguru import logger
@@ -15,21 +15,20 @@ logger.add('app.log',  format="{time} {level} {message}", level="INFO")
 
 DB_FILE_NAME = 'russian_cities.db'
 
-def get_city_coordinates(city_name: str) -> Optional[Coordinates]:
+async def get_city_coordinates(city_name: str) -> Optional[Coordinates]:
     """
     Возвращает координаты объект Coordinates или None 
     
     """
     try:
         coordinates = None
-        with sqlite3.connect(DB_FILE_NAME) as con:
-            cursor = con.cursor()
-            cursor.execute("""
+        async with aiosqlite.connect(DB_FILE_NAME) as db:
+            cursor = await db.execute("""
                 SELECT lat, lon FROM cities 
                 WHERE name = ?
             """, (city_name.title(),))
 
-            result = cursor.fetchone()
+            result = await cursor.fetchone()
             if result:
                 coordinates = Coordinates(result[0], result[1])
     except DataBaseException:

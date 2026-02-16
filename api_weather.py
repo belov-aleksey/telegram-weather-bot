@@ -134,7 +134,7 @@ async def get_weather(city_name: str) -> str:
     coordinates = None
     logger.info(f'Начинаю поиск координат города {city_name}')
 
-    coordinates = get_city_coordinates(city_name)
+    coordinates = await get_city_coordinates(city_name)
 
     if not coordinates:
         answer = get_unknown_city_error()
