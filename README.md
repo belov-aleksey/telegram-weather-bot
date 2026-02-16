@@ -1,36 +1,36 @@
-# Телеграм-бот для отображения погоды
+# Telegram Weather Bot
 
-Этот телеграм-бот позволяет пользователям получать текущую погоду по запросу, используя API OpenWeather.
+This Telegram bot allows users to get current weather information by request using the OpenWeather API.
 
-##  Описание
+##  Description
 
-Телеграм-бот предоставляет пользователю возможность узнать текущую погоду в любом городе. Для получения данных о погоде используется API OpenWeather. Бот обрабатывает запросы пользователей и отправляет актуальную информацию о температуре, скорости ветра и других параметрах, а также прогноз погоды на ближайшее время.
+The Telegram bot enables users to check the current weather in any city. It uses the OpenWeather API to fetch weather data. The bot processes user requests and sends up-to-date information about temperature, wind speed, and other parameters, as well as weather forecasts for the near future.
 
 <img width="1573" height="689" alt="Снимок экрана 2025-12-27 012555" src="https://github.com/user-attachments/assets/15caed29-5e3d-4d5f-92c6-2b34727249d2" />
 
 
 ---
 
-##  Установка и настройка
+##  Installation and Setup
 
 ### 0. Python
-Установите Python 3.12
+Install Python 3.12+
 
-### 1. Клонируйте репозиторий
+### 1. Clone the repository
 ```bash
 git clone git@github.com:belov-aleksey/telegram-weather-bot.git
 cd telegram-weather-bot
 ```
 
-### 2. Установите зависимости
+### 2. Install dependencies
 ```bash
 make install
 ```
 
-### 3. Настройте переменные окружения
-Вставить необходимые токены в файл .env
+### 3. Configure environment variables
+Insert the required tokens into the .env file
 
-##  Запуск бота
+##  Run the bot
 ```bash
 make run
 ```
